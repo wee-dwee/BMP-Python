@@ -13,7 +13,7 @@ class PyVistaApp(tk.Tk):
         super().__init__()
 
         self.title("PyVista Plotter")
-        self.geometry("400x600")
+        self.geometry("600x600")
 
         self.main_frame = ttk.Frame(self)
         self.main_frame.pack(fill=tk.BOTH, expand=True)
@@ -175,39 +175,67 @@ class PyVistaApp(tk.Tk):
         self.line_actors['femur'] = femur_lines_actor
 
     def add_controls(self):
+        tibia_frame = ttk.Frame(self.scrollable_frame)
+        tibia_frame.pack(side=tk.LEFT, fill='y', padx=10)
+
+        femur_frame = ttk.Frame(self.scrollable_frame)
+        femur_frame.pack(side=tk.LEFT, fill='y', padx=10)
+
         for label in self.landmark_points.keys():
-            frame = ttk.Frame(self.scrollable_frame)
-            frame.pack(pady=2, fill='x')
+            if label.startswith('T'):
+                frame = ttk.Frame(tibia_frame)
+                frame.pack(pady=2, fill='x')
 
-            button = ttk.Button(frame, text=label, command=lambda l=label: self.change_color(l))
-            button.pack(side='left')
+                button = ttk.Button(frame, text=label, command=lambda l=label: self.change_color(l))
+                button.pack(side='left')
 
-            var = tk.IntVar()
-            checkbox = ttk.Checkbutton(frame, variable=var, command=lambda l=label, v=var: self.toggle_color(l, v))
-            checkbox.pack(side='right')
+                var = tk.IntVar()
+                checkbox = ttk.Checkbutton(frame, variable=var, command=lambda l=label, v=var: self.toggle_color(l, v))
+                checkbox.pack(side='right')
 
-            self.landmark_buttons[label] = button
-            self.landmark_checkbuttons[label] = checkbox
-            self.landmark_vars[label] = var
+                self.landmark_buttons[label] = button
+                self.landmark_checkbuttons[label] = checkbox
+                self.landmark_vars[label] = var
+            elif label.startswith('F'):
+                frame = ttk.Frame(femur_frame)
+                frame.pack(pady=2, fill='x')
+
+                button = ttk.Button(frame, text=label, command=lambda l=label: self.change_color(l))
+                button.pack(side='left')
+
+                var = tk.IntVar()
+                checkbox = ttk.Checkbutton(frame, variable=var, command=lambda l=label, v=var: self.toggle_color(l, v))
+                checkbox.pack(side='right')
+
+                self.landmark_buttons[label] = button
+                self.landmark_checkbuttons[label] = checkbox
+                self.landmark_vars[label] = var
+
+        control_frame = ttk.Frame(self.scrollable_frame)
+        control_frame.pack(side=tk.LEFT, fill='y', padx=10)
 
         for bone in self.bones:
-            hide_button = ttk.Button(self.scrollable_frame, text=f"Hide {bone}", command=lambda b=bone: self.hide_bone(b))
+            hide_button = ttk.Button(control_frame, text=f"Hide {bone}", command=lambda b=bone: self.hide_bone(b))
             hide_button.pack(pady=5)
             self.hide_buttons.append(hide_button)
 
-            transparency_label = ttk.Label(self.scrollable_frame, text=f"{bone} Transparency")
+            transparency_label = ttk.Label(control_frame, text=f"{bone} Transparency")
             transparency_label.pack(pady=5)
 
-            transparency_slider = ttk.Scale(self.scrollable_frame, from_=1, to=0, orient='horizontal', command=lambda val, b=bone: self.set_transparency(b, val))
+            transparency_slider = ttk.Scale(control_frame, from_=1, to=0, orient='horizontal', command=lambda val, b=bone: self.set_transparency(b, val))
             transparency_slider.pack(pady=5)
             self.transparency_sliders.append(transparency_slider)
-        rotation_label = ttk.Label(self, text="Tibia Rotation")
+
+        rotation_frame = ttk.Frame(control_frame)
+        rotation_frame.pack(pady=5)
+
+        rotation_label = ttk.Label(rotation_frame, text="Tibia Rotation")
         rotation_label.pack(pady=5)
 
-        rotate_positive_button = ttk.Button(self, text="Rotate +", command=lambda: self.rotate_tibia(self.rotation_angle))
+        rotate_positive_button = ttk.Button(rotation_frame, text="Rotate +", command=lambda: self.rotate_tibia(self.rotation_angle))
         rotate_positive_button.pack(pady=5)
 
-        rotate_negative_button = ttk.Button(self, text="Rotate -", command=lambda: self.rotate_tibia(-self.rotation_angle))
+        rotate_negative_button = ttk.Button(rotation_frame, text="Rotate -", command=lambda: self.rotate_tibia(-self.rotation_angle))
         rotate_negative_button.pack(pady=5)
 
     def change_color(self, label):
@@ -222,30 +250,29 @@ class PyVistaApp(tk.Tk):
             self.glyph_actors[label].GetProperty().SetColor(0, 1, 0)  # Change color to green
 
     def hide_bone(self, bone):
-    # Toggle the visibility of the bone
+        # Toggle the visibility of the bone
         actor = self.plotter.renderer._actors[bone]
         visibility = not actor.GetVisibility()
         actor.SetVisibility(visibility)
-    
-    # Toggle the visibility of the landmark points
+
+        # Toggle the visibility of the landmark points
         if bone in ['femur', 'tibia']:  # Only toggle landmark points for femur and tibia
             for label, actor in self.glyph_actors.items():
                 if label.startswith(bone[0].upper()):
                     actor.SetVisibility(visibility)
 
-        # Toggle the visibility of the point labels
+            # Toggle the visibility of the point labels
             self.label_actors[bone].SetVisibility(visibility)
 
-        # Toggle the visibility of the lines
+            # Toggle the visibility of the lines
             if bone in self.line_actors:
                 self.line_actors[bone].SetVisibility(visibility)
 
         elif bone == 'patella':
-        # No landmarks for patella, so only toggle the bone itself
+            # No landmarks for patella, so only toggle the bone itself
             pass
 
         self.plotter.update()
-
 
     def set_transparency(self, bone, value):
         actor = self.plotter.renderer._actors[bone]
@@ -268,8 +295,6 @@ class PyVistaApp(tk.Tk):
             self.tibia_actor.points = self.tibia_actor.points @ transformation_matrix[:3, :3]
 
             self.plotter.update()
-
-        
 
 if __name__ == "__main__":
     app = PyVistaApp()
