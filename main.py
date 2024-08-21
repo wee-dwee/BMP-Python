@@ -29,6 +29,10 @@ class PyVistaApp(tk.Tk):
             )
         )
 
+        self.style = ttk.Style()
+        self.style.configure('White.TButton' , foreground = 'white')
+        self.style.configure('Green.TButton' , foreground = 'green')
+
         self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
 
@@ -44,7 +48,7 @@ class PyVistaApp(tk.Tk):
         self.bones = ['patella', 'femur', 'tibia']
         self.solids = []
         self.landmark_buttons = {}
-        self.landmark_checkbuttons = {}
+        # self.landmark_checkbuttons = {}
         self.landmark_vars = {}
         self.landmark_points = {}
         self.glyph_actors = {}
@@ -56,7 +60,7 @@ class PyVistaApp(tk.Tk):
         self.rotation_angle = 2  # Angle to rotate each step
 
     def display_plot(self):
-        kinds = ['/Users/dweejpandya/Downloads/SRI - Copy - Copy/patella.obj', '/Users/dweejpandya/Downloads/SRI - Copy - Copy/femur.obj', '/Users/dweejpandya/Downloads/SRI - Copy - Copy/tibia.obj']
+        kinds = ['patella.obj', 'femur.obj', 'tibia.obj']
         centers = [
             (0, 1, 0),
             (0, 0, 0),
@@ -84,8 +88,8 @@ class PyVistaApp(tk.Tk):
 
     def add_landmarks_and_lines(self):
         # Load the CSV files
-        tibia_csv_file = "/Users/dweejpandya/Downloads/SRI - Copy - Copy/LM_INFO_LPS_Coord_tibia.csv"
-        femur_csv_file = "/Users/dweejpandya/Downloads/SRI - Copy - Copy/LM_INFO_LPS_Coord_femur.csv"
+        tibia_csv_file = "LM_INFO_LPS_Coord_tibia.csv"
+        femur_csv_file = "LM_INFO_LPS_Coord_femur.csv"
 
         tibia_df = pd.read_csv(tibia_csv_file)
         femur_df = pd.read_csv(femur_csv_file)
@@ -190,11 +194,11 @@ class PyVistaApp(tk.Tk):
                 button.pack(side='left')
 
                 var = tk.IntVar()
-                checkbox = ttk.Checkbutton(frame, variable=var, command=lambda l=label, v=var: self.toggle_color(l, v))
-                checkbox.pack(side='right')
+                # checkbox = ttk.Checkbutton(frame, variable=var, command=lambda l=label, v=var: self.toggle_color(l, v))
+                # checkbox.pack(side='right')
 
                 self.landmark_buttons[label] = button
-                self.landmark_checkbuttons[label] = checkbox
+                # self.landmark_checkbuttons[label] = checkbox
                 self.landmark_vars[label] = var
             elif label.startswith('F'):
                 frame = ttk.Frame(femur_frame)
@@ -204,11 +208,11 @@ class PyVistaApp(tk.Tk):
                 button.pack(side='left')
 
                 var = tk.IntVar()
-                checkbox = ttk.Checkbutton(frame, variable=var, command=lambda l=label, v=var: self.toggle_color(l, v))
-                checkbox.pack(side='right')
+                # checkbox = ttk.Checkbutton(frame, variable=var, command=lambda l=label, v=var: self.toggle_color(l, v))
+                # checkbox.pack(side='right')
 
                 self.landmark_buttons[label] = button
-                self.landmark_checkbuttons[label] = checkbox
+                # self.landmark_checkbuttons[label] = checkbox
                 self.landmark_vars[label] = var
 
         control_frame = ttk.Frame(self.scrollable_frame)
@@ -238,9 +242,16 @@ class PyVistaApp(tk.Tk):
         rotate_negative_button = ttk.Button(rotation_frame, text="Rotate -", command=lambda: self.rotate_tibia(-self.rotation_angle))
         rotate_negative_button.pack(pady=5)
 
+        
+
+
     def change_color(self, label):
-        var = self.landmark_vars[label]
-        var.set(1)  # Check the checkbox
+        btn = self.landmark_buttons[label]
+        currStyle = btn.cget('style')
+        if(currStyle=='Green.TButton'):
+            btn.config(style='White.TButton')
+        else:
+            btn.config(style='Green.TButton')
         self.glyph_actors[label].GetProperty().SetColor(0, 1, 0)  # Change color to green
 
     def toggle_color(self, label, var):
