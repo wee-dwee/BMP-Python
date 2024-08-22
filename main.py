@@ -250,9 +250,10 @@ class PyVistaApp(tk.Tk):
         currStyle = btn.cget('style')
         if(currStyle=='Green.TButton'):
             btn.config(style='White.TButton')
+            self.glyph_actors[label].GetProperty().SetColor(1, 0, 0)  # Change color to green
         else:
             btn.config(style='Green.TButton')
-        self.glyph_actors[label].GetProperty().SetColor(0, 1, 0)  # Change color to green
+            self.glyph_actors[label].GetProperty().SetColor(0, 1, 0)  # Change color to green
 
     def toggle_color(self, label, var):
         if var.get() == 0:
