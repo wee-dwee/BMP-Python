@@ -1,4 +1,5 @@
 import tkinter as tk
+import vtk
 from tkinter import ttk
 import pyvista as pv
 from pyvista import Plotter
@@ -11,17 +12,13 @@ bone_color = ['yellow', 'orange', 'green']
 class PyVistaApp(tk.Tk):
     def __init__(self):
         super().__init__()
-
         self.title("PyVista Plotter")
         self.geometry("600x600")
-
         self.main_frame = ttk.Frame(self)
         self.main_frame.pack(fill=tk.BOTH, expand=True)
-
         self.canvas = tk.Canvas(self.main_frame)
         self.scrollbar = ttk.Scrollbar(self.main_frame, orient=tk.VERTICAL, command=self.canvas.yview)
         self.scrollable_frame = ttk.Frame(self.canvas)
-
         self.scrollable_frame.bind(
             "<Configure>",
             lambda e: self.canvas.configure(
@@ -31,7 +28,7 @@ class PyVistaApp(tk.Tk):
 
         self.style = ttk.Style()
         self.style.configure('White.TButton' , foreground = 'white')
-        self.style.configure('Green.TButton' , foreground = 'green')
+        self.style.configure('Green.TButton', foreground='yellow', font=('TkDefaultFont',13,'bold'))
 
         self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
@@ -48,7 +45,6 @@ class PyVistaApp(tk.Tk):
         self.bones = ['patella', 'femur', 'tibia']
         self.solids = []
         self.landmark_buttons = {}
-        # self.landmark_checkbuttons = {}
         self.landmark_vars = {}
         self.landmark_points = {}
         self.glyph_actors = {}
@@ -190,29 +186,21 @@ class PyVistaApp(tk.Tk):
                 frame = ttk.Frame(tibia_frame)
                 frame.pack(pady=2, fill='x')
 
-                button = ttk.Button(frame, text=label, command=lambda l=label: self.change_color(l))
+                button = ttk.Button(frame, text=label, style = 'White.TButton' ,command=lambda l=label: self.change_color(l))
                 button.pack(side='left')
 
                 var = tk.IntVar()
-                # checkbox = ttk.Checkbutton(frame, variable=var, command=lambda l=label, v=var: self.toggle_color(l, v))
-                # checkbox.pack(side='right')
-
                 self.landmark_buttons[label] = button
-                # self.landmark_checkbuttons[label] = checkbox
                 self.landmark_vars[label] = var
             elif label.startswith('F'):
                 frame = ttk.Frame(femur_frame)
                 frame.pack(pady=2, fill='x')
 
-                button = ttk.Button(frame, text=label, command=lambda l=label: self.change_color(l))
+                button = ttk.Button(frame, text=label, style = 'White.TButton', command=lambda l=label: self.change_color(l))
                 button.pack(side='left')
 
                 var = tk.IntVar()
-                # checkbox = ttk.Checkbutton(frame, variable=var, command=lambda l=label, v=var: self.toggle_color(l, v))
-                # checkbox.pack(side='right')
-
                 self.landmark_buttons[label] = button
-                # self.landmark_checkbuttons[label] = checkbox
                 self.landmark_vars[label] = var
 
         control_frame = ttk.Frame(self.scrollable_frame)
@@ -242,24 +230,18 @@ class PyVistaApp(tk.Tk):
         rotate_negative_button = ttk.Button(rotation_frame, text="Rotate -", command=lambda: self.rotate_tibia(-self.rotation_angle))
         rotate_negative_button.pack(pady=5)
 
-        
-
 
     def change_color(self, label):
         btn = self.landmark_buttons[label]
         currStyle = btn.cget('style')
         if(currStyle=='Green.TButton'):
-            btn.config(style='White.TButton')
-            self.glyph_actors[label].GetProperty().SetColor(1, 0, 0)  # Change color to green
-        else:
-            btn.config(style='Green.TButton')
-            self.glyph_actors[label].GetProperty().SetColor(0, 1, 0)  # Change color to green
-
-    def toggle_color(self, label, var):
-        if var.get() == 0:
+            btn.config(style = 'White.TButton')
             self.glyph_actors[label].GetProperty().SetColor(1, 0, 0)  # Change color to red
         else:
+            btn.config(style = 'Green.TButton')
             self.glyph_actors[label].GetProperty().SetColor(0, 1, 0)  # Change color to green
+        self.plotter.update()
+
 
     def hide_bone(self, bone):
         # Toggle the visibility of the bone
@@ -286,10 +268,12 @@ class PyVistaApp(tk.Tk):
 
         self.plotter.update()
 
+
     def set_transparency(self, bone, value):
         actor = self.plotter.renderer._actors[bone]
         actor.GetProperty().SetOpacity(float(value))
         self.plotter.update()
+
 
     def rotate_tibia(self, angle):
         if self.tibia_actor:
@@ -307,6 +291,7 @@ class PyVistaApp(tk.Tk):
             self.tibia_actor.points = self.tibia_actor.points @ transformation_matrix[:3, :3]
 
             self.plotter.update()
+
 
 if __name__ == "__main__":
     app = PyVistaApp()
