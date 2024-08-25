@@ -82,6 +82,10 @@ class PyVistaApp(tk.Tk):
 
         self.add_controls()
 
+        # Hide the label and button after displaying the plot
+        self.label.pack_forget()
+        self.plot_button.pack_forget()
+
     def add_landmarks_and_lines(self):
         # Load the CSV files
         tibia_csv_file = "LM_INFO_LPS_Coord_tibia.csv"
@@ -175,36 +179,52 @@ class PyVistaApp(tk.Tk):
         self.line_actors['femur'] = femur_lines_actor
 
     def add_controls(self):
+        # Tibia frame and title
         tibia_frame = ttk.Frame(self.scrollable_frame)
-        tibia_frame.pack(side=tk.LEFT, fill='y', padx=10)
+        tibia_frame.pack(side=tk.LEFT, fill='y', padx=10, pady=10)
 
+        tibia_title = ttk.Label(tibia_frame, text="Tibia", font=("Arial", 12, "bold"))
+        tibia_title.pack(pady=(0, 10))  # Add some padding below the title
+
+        # Femur frame and title
         femur_frame = ttk.Frame(self.scrollable_frame)
-        femur_frame.pack(side=tk.LEFT, fill='y', padx=10)
+        femur_frame.pack(side=tk.LEFT, fill='y', padx=10, pady=10)
 
+        femur_title = ttk.Label(femur_frame, text="Femur", font=("Arial", 12, "bold"))
+        femur_title.pack(pady=(0, 10))  # Add some padding below the title
+
+        # Add buttons and controls for Tibia
         for label in self.landmark_points.keys():
             if label.startswith('T'):
                 frame = ttk.Frame(tibia_frame)
                 frame.pack(pady=2, fill='x')
 
-                button = ttk.Button(frame, text=label, style = 'White.TButton' ,command=lambda l=label: self.change_color(l))
+                button = ttk.Button(frame, text=label, style='White.TButton', command=lambda l=label: self.change_color(l))
                 button.pack(side='left')
 
                 var = tk.IntVar()
                 self.landmark_buttons[label] = button
                 self.landmark_vars[label] = var
-            elif label.startswith('F'):
+
+        # Add buttons and controls for Femur
+        for label in self.landmark_points.keys():
+            if label.startswith('F'):
                 frame = ttk.Frame(femur_frame)
                 frame.pack(pady=2, fill='x')
 
-                button = ttk.Button(frame, text=label, style = 'White.TButton', command=lambda l=label: self.change_color(l))
+                button = ttk.Button(frame, text=label, style='White.TButton', command=lambda l=label: self.change_color(l))
                 button.pack(side='left')
 
                 var = tk.IntVar()
                 self.landmark_buttons[label] = button
                 self.landmark_vars[label] = var
 
-        control_frame = ttk.Frame(self.scrollable_frame)
-        control_frame.pack(side=tk.LEFT, fill='y', padx=10)
+            # Control frame
+        control_frame = ttk.Frame(tibia_frame)
+        control_frame.pack(pady=(50, 10))  # Increase the top padding for more space between frames
+        
+        control_title = ttk.Label(control_frame, text="Controls", font=("Arial", 12, "bold"))
+        control_title.pack(pady=(0, 10))  # Add some padding below the title
 
         for bone in self.bones:
             hide_button = ttk.Button(control_frame, text=f"Hide {bone}", command=lambda b=bone: self.hide_bone(b))
@@ -218,6 +238,7 @@ class PyVistaApp(tk.Tk):
             transparency_slider.pack(pady=5)
             self.transparency_sliders.append(transparency_slider)
 
+        # Rotation controls
         rotation_frame = ttk.Frame(control_frame)
         rotation_frame.pack(pady=5)
 
@@ -229,6 +250,7 @@ class PyVistaApp(tk.Tk):
 
         rotate_negative_button = ttk.Button(rotation_frame, text="Rotate -", command=lambda: self.rotate_tibia(-self.rotation_angle))
         rotate_negative_button.pack(pady=5)
+
 
 
     def change_color(self, label):
