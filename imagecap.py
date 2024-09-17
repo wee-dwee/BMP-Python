@@ -1,80 +1,88 @@
-# imagecap.py
-
+from flask import Flask, jsonify, request
 import cv2
+import random
+import base64
+import numpy as np
+import time
 
-# Global variable to store the captured image
-captured_image = None
-points = []
+app = Flask(__name__)
 
+# Function to capture an image from the webcam
 def capture_image():
-    global captured_image
-
-    # Open the webcam (usually the first camera is at index 0)
+    # Open the webcam
     cap = cv2.VideoCapture(0)
 
     if not cap.isOpened():
-        print("Error: Could not open webcam.")
-        return
+        return None, "Error: Could not open webcam."
+
+    # Set a higher resolution
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+
+    # Add a short delay to allow the camera to adjust
+    time.sleep(1)
 
     # Read a single frame from the webcam
     ret, frame = cap.read()
 
-    if ret:
-        # Store the frame in the global variable
-        captured_image = frame
-        print("Image captured successfully.")
-    else:
-        print("Error: Could not capture image.")
-
     # Release the webcam
     cap.release()
 
-def show_image():
-    global captured_image
+    if ret:
+        return frame, "Image captured successfully."
+    else:
+        return None, "Error: Could not capture image."
 
-    if captured_image is None:
-        print("Error: No image to display. Capture an image first.")
-        return
+# Function to convert an image to base64 for transmission
+def image_to_base64(image):
+    _, buffer = cv2.imencode('.jpg', image)  # Convert to JPEG format
+    image_base64 = base64.b64encode(buffer).decode('utf-8')  # Encode to base64
+    return image_base64
 
-    # Display the captured image in a window
-    cv2.imshow("Captured Image", captured_image)
+# Function to convert base64 to image
+def base64_to_image(image_base64):
+    image_data = base64.b64decode(image_base64)
+    np_array = np.frombuffer(image_data, np.uint8)
+    image = cv2.imdecode(np_array, cv2.IMREAD_COLOR)
+    return image
 
-    # Wait for any key press to close the window
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+# Function to generate random 3D points using the image
+def calculate_points(image):
+    # Example: Use the image to generate points (Here, we generate random points)
+    # You could add logic to use image properties to influence these points
+    height, width, _ = image.shape
+    x = random.uniform(0, 100)
+    y = random.uniform(0, 100)
+    z = random.uniform(0, 100)
+    return (x, y, z)
 
-# Mouse callback function to capture points on mouse click
-def click_event(event, x, y, flags, param):
-    global points
-    if event == cv2.EVENT_LBUTTONDOWN:
-        # Append point (x, y) to points list
-        points.append((x, y))
-        print(f"Point captured: ({x}, {y})")
+# Flask route to capture an image
+@app.route('/capture_image', methods=['GET'])
+def api_capture_image():
+    image, message = capture_image()
+    if image is not None:
+        image_base64 = image_to_base64(image)
+        return jsonify({"message": message, "image": image_base64}), 200
+    else:
+        return jsonify({"error": message}), 500
 
-        # Display the point on the image (optional)
-        cv2.circle(captured_image, (x, y), 5, (0, 255, 0), -1)
-        cv2.imshow("Captured Image", captured_image)
+# Flask route to calculate points based on the image
+@app.route('/calculate_points', methods=['POST'])
+def api_calculate_points():
+    # Get the base64-encoded image from the request body
+    data = request.get_json()
+    image_base64 = data.get("image", None)
+    
+    if image_base64 is None:
+        return jsonify({"error": "Image is required."}), 400
 
-def extract_2d_points():
-    global captured_image, points
+    # Convert the base64-encoded image back to an image format
+    image = base64_to_image(image_base64)
 
-    if captured_image is None:
-        print("Error: No image to extract points from. Capture an image first.")
-        return
+    # Calculate points based on the image
+    points = calculate_points(image)
 
-    points.clear()  # Clear any previously stored points
-
-    # Display the image and set the mouse callback to capture clicks
-    cv2.imshow("Captured Image", captured_image)
-    cv2.setMouseCallback("Captured Image", click_event)
-
-    # Wait until the user presses a key
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-
-    return points
+    return jsonify({"points": points}), 200
 
 if __name__ == "__main__":
-    capture_image()
-    extract_2d_points()
-    print("Extracted 2D points:", points)
+    app.run(debug=True)

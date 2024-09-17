@@ -6,8 +6,85 @@ from pyvista import Plotter
 import pandas as pd
 import numpy as np
 from scipy.spatial.transform import Rotation as R
+import csv
+import os
+import requests
+import json
+import cv2
+import random
+import base64
+import numpy as np
 
 bone_color = ['yellow', 'orange', 'green']
+
+api_end_point = "http://127.0.0.1:5000"
+
+def record_coordinates(label, x, y, z):
+        file_name = 'records.csv'
+        
+        # Check if the file already exists
+        file_exists = os.path.isfile(file_name)
+        
+        # Open the file in append mode
+        with open(file_name, mode='a', newline='') as file:
+            writer = csv.writer(file)
+            
+            # Write the header if the file does not exist
+            if not file_exists:
+                writer.writerow(['Label', 'X', 'Y', 'Z'])
+            
+            # Write the label and coordinates
+            writer.writerow([label, x, y, z])
+            
+        print(f"Record added: {label}, {x}, {y}, {z}")
+
+    
+def base64_to_image(image_base64):
+    image_data = base64.b64decode(image_base64)
+    np_array = np.frombuffer(image_data, np.uint8)
+    image = cv2.imdecode(np_array, cv2.IMREAD_COLOR)
+    return image
+
+def image_to_base64(image):
+    _, buffer = cv2.imencode('.jpg', image)  # Convert to JPEG format
+    image_base64 = base64.b64encode(buffer).decode('utf-8')  # Encode to base64
+    return image_base64
+
+
+def show_image(captured_image):
+    if captured_image is None:
+        print("Error: No image to display. Capture an image first.")
+        return
+    
+    # Display the captured image in a window
+    cv2.imshow("Captured Image :", captured_image)
+    # Wait for any key press to close the window
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+
+def get_image():
+    response = requests.get(api_end_point+"/capture_image")
+    json_response = response.json()
+    if "image" in json_response:
+        image_base64 = json_response["image"]
+        image = base64_to_image(image_base64)
+        return image
+    else :
+        return None
+        
+def get_points(image_base64):
+    payload = {
+        "image": image_base64
+    }
+
+    response = requests.post(api_end_point + "/calculate_points" , json=payload)
+    json_response = response.json()
+    if "points" in json_response:
+        return json_response["points"]
+    else:
+        return None
+
 
 class PyVistaApp(tk.Tk):
     def __init__(self):
@@ -85,6 +162,9 @@ class PyVistaApp(tk.Tk):
         # Hide the label and button after displaying the plot
         self.label.pack_forget()
         self.plot_button.pack_forget()
+
+
+    
 
     def add_landmarks_and_lines(self):
         # Load the CSV files
@@ -252,7 +332,6 @@ class PyVistaApp(tk.Tk):
         rotate_negative_button.pack(pady=5)
 
 
-
     def change_color(self, label):
         btn = self.landmark_buttons[label]
         currStyle = btn.cget('style')
@@ -263,6 +342,30 @@ class PyVistaApp(tk.Tk):
             btn.config(style = 'Green.TButton')
             self.glyph_actors[label].GetProperty().SetColor(0, 1, 0)  # Change color to green
         self.plotter.update()
+
+        if(currStyle=='Green.TButton'):
+            return
+
+        print(f"Label : {label}")
+
+        image = get_image()
+        show_image(image)
+        if image is None:
+            print("Error Getting Image.")
+            return
+        image_base64 = image_to_base64(image)
+        if image_base64 is None:
+            print("Error converting image to base64.")
+            return
+        
+        points = get_points(image_base64)
+        if points is None:
+            print("Error calculating points")
+            return
+        
+        record_coordinates(label , points[0] , points[1] , points[2])
+
+
 
 
     def hide_bone(self, bone):
@@ -313,6 +416,9 @@ class PyVistaApp(tk.Tk):
             self.tibia_actor.points = self.tibia_actor.points @ transformation_matrix[:3, :3]
 
             self.plotter.update()
+
+    
+    
 
 
 if __name__ == "__main__":
