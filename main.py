@@ -17,7 +17,7 @@ import numpy as np
 
 bone_color = ['yellow', 'orange', 'green']
 
-api_end_point = "http://127.0.0.1:5000"
+api_end_point = "http://127.0.0.1:8000"
 
 def record_coordinates(label, x, y, z):
         file_name = 'records.csv'

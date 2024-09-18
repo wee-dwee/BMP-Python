@@ -6,7 +6,7 @@ import base64
 import numpy as np
 
 # Capture an image
-response = requests.get("http://127.0.0.1:5000/capture_image")
+response = requests.get("http://127.0.0.1:8000/capture_image")
 print("Step-1 done")
 capture_response = response.json()
 print(capture_response)
@@ -43,5 +43,7 @@ if "image" in capture_response:
     show_image(image)
     
     # Call the calculate points API
-    response = requests.post("http://127.0.0.1:5000/calculate_points", json=payload)
+    response = requests.post("http://127.0.0.1:8000/calculate_points", json=payload)
     print(response.json())
+else:
+    print("Image not in response")

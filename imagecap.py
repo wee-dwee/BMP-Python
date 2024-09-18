@@ -1,19 +1,32 @@
-from flask import Flask, jsonify, request
+from fastapi import FastAPI, HTTPException
 import cv2
 import random
 import base64
 import numpy as np
 import time
+from contextlib import asynccontextmanager
 
-app = Flask(__name__)
+# Initialize the FastAPI app first
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    initialize_camera()  # Initialize the camera when the app starts
+    yield  # The app runs here
+    global cap
+    if cap is not None and cap.isOpened():
+        cap.release()  # Release the camera when the app stops
 
-# Function to capture an image from the webcam
-def capture_image():
-    # Open the webcam
+app = FastAPI(lifespan=lifespan)
+
+# Global variable for camera
+cap = None
+
+# Function to keep the camera open
+def initialize_camera():
+    global cap
     cap = cv2.VideoCapture(0)
 
     if not cap.isOpened():
-        return None, "Error: Could not open webcam."
+        raise Exception("Error: Could not open webcam.")
 
     # Set a higher resolution
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
@@ -22,11 +35,14 @@ def capture_image():
     # Add a short delay to allow the camera to adjust
     time.sleep(1)
 
+# Function to capture an image from the open camera
+def capture_image():
+    global cap
+    if not cap.isOpened():
+        return None, "Error: Camera is not opened."
+
     # Read a single frame from the webcam
     ret, frame = cap.read()
-
-    # Release the webcam
-    cap.release()
 
     if ret:
         return frame, "Image captured successfully."
@@ -48,33 +64,28 @@ def base64_to_image(image_base64):
 
 # Function to generate random 3D points using the image
 def calculate_points(image):
-    # Example: Use the image to generate points (Here, we generate random points)
-    # You could add logic to use image properties to influence these points
     height, width, _ = image.shape
     x = random.uniform(0, 100)
     y = random.uniform(0, 100)
     z = random.uniform(0, 100)
     return (x, y, z)
 
-# Flask route to capture an image
-@app.route('/capture_image', methods=['GET'])
+@app.get("/capture_image")
 def api_capture_image():
     image, message = capture_image()
     if image is not None:
         image_base64 = image_to_base64(image)
-        return jsonify({"message": message, "image": image_base64}), 200
+        return {"message": message, "image": image_base64}
     else:
-        return jsonify({"error": message}), 500
+        raise HTTPException(status_code=500, detail=message)
 
-# Flask route to calculate points based on the image
-@app.route('/calculate_points', methods=['POST'])
-def api_calculate_points():
+@app.post("/calculate_points")
+def api_calculate_points(data: dict):
     # Get the base64-encoded image from the request body
-    data = request.get_json()
     image_base64 = data.get("image", None)
     
     if image_base64 is None:
-        return jsonify({"error": "Image is required."}), 400
+        raise HTTPException(status_code=400, detail="Image is required.")
 
     # Convert the base64-encoded image back to an image format
     image = base64_to_image(image_base64)
@@ -82,7 +93,4 @@ def api_calculate_points():
     # Calculate points based on the image
     points = calculate_points(image)
 
-    return jsonify({"points": points}), 200
-
-if __name__ == "__main__":
-    app.run(debug=True)
+    return {"points": points}
