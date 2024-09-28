@@ -82,7 +82,8 @@ if __name__ == '__main__':
         
         # Corner point list [array, array] for two aruco markers
         is_marker_detected, corner_points = SingleCamAruco_obj.get_world_coordinates(frame)
-        
+        print('Corner Points : ')
+        print(corner_points)
         if all(is_marker_detected):
             print("Both markers detected.")
             
