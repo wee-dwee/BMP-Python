@@ -2,19 +2,13 @@ import numpy as np
 import json
 import cv2
 import Trans3D
-from scipy.spatial import procrustes
 from SingleCameraAruCoLib_v3 import singleCameraAruco
 
+# Function to read the JSON configuration file
 def read_json(file_name):
     with open(file_name) as fh:
         system_config = json.load(fh)
     return system_config
-
-# Function to perform Procrustes transformation
-def procrustes_transform(points, target_points):
-    # Procrustes analysis to minimize the difference between two sets of points
-    mtx1, mtx2, disparity = procrustes(target_points, points)
-    return mtx1, disparity
 
 if __name__ == '__main__':
     
@@ -83,15 +77,11 @@ if __name__ == '__main__':
             transformed_coordinates = np.dot(transformation_matrix, coordinates_homogeneous)
             transformed_coordinates = transformed_coordinates[:-1, :].T
 
-            # Now use Procrustes to refine the transformation
-            refined_transformed_coordinates, disparity = procrustes_transform(transformed_coordinates, target_points)
+            print("Refined Transformed Additional Points:\n", transformed_coordinates)
 
-            # Output the transformed and rescaled coordinates
-            print("Refined Transformed Additional Points:\n", refined_transformed_coordinates)
-            print("Disparity (error measure):", disparity)
-        
-        else:
-            print("Not all markers are detected.")
+            transformed_coordinates = np.array(transformed_coordinates)
+            transformed_mean = np.mean(transformed_coordinates , axis = 0)
+            print("Mean Tranformed Coordinates :\n" , transformed_mean)
         
         # Show the processed image with markers
         cv2.imshow('aruco_Tracking', cv2.resize(frame, (640, 480)))

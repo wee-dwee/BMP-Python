@@ -79,6 +79,8 @@ def get_points(image_base64):
     }
 
     response = requests.post(api_end_point + "/calculate_points" , json=payload)
+    print("Point Response : ")
+    print(response)
     json_response = response.json()
     if "points" in json_response:
         return json_response["points"]
