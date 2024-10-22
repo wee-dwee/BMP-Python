@@ -73,19 +73,41 @@ def get_image():
     else :
         return None
         
+
+
 def get_points(image_base64):
     payload = {
         "image": image_base64
     }
-
-    response = requests.post(api_end_point + "/calculate_points" , json=payload)
-    print("Point Response : ")
-    print(response)
-    json_response = response.json()
-    if "points" in json_response:
-        return json_response["points"]
-    else:
+    
+    try:
+        # Send the POST request to the API endpoint
+        response = requests.post(api_end_point + "/calculate_points", json=payload)
+        
+        # Log the status code for debugging
+        print("Status Code:", response.status_code)
+        
+        # Check if the response is successful (status code 200)
+        if response.status_code == 200:
+            json_response = response.json()
+            print("Point Response: ", json_response)
+            
+            # Check if 'points' key is in the JSON response
+            if "points" in json_response:
+                return json_response["points"]
+            else:
+                print("No points found in the response.")
+                return None
+        else:
+            # Log the response content for debugging purposes
+            print("Error Response:", response.text)
+            return None
+    
+    except Exception as e:
+        # Handle any exceptions that may occur
+        print(f"An error occurred: {str(e)}")
         return None
+
 
 
 class PyVistaApp(tk.Tk):
@@ -349,7 +371,6 @@ class PyVistaApp(tk.Tk):
             return
 
         print(f"Label : {label}")
-
         image = get_image()
         show_image(image)
         if image is None:
@@ -359,7 +380,6 @@ class PyVistaApp(tk.Tk):
         if image_base64 is None:
             print("Error converting image to base64.")
             return
-        
         points = get_points(image_base64)
         if points is None:
             print("Error calculating points")
