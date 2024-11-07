@@ -130,6 +130,7 @@ class PyVistaApp(tk.Tk):
         self.style = ttk.Style()
         self.style.configure('White.TButton' , foreground = 'white')
         self.style.configure('Green.TButton', foreground='yellow', font=('TkDefaultFont',13,'bold'))
+        self.style.configure('Blue.TButton', foreground='blue', font=('TkDefaultFont',13,'bold'))
 
         self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
@@ -354,6 +355,45 @@ class PyVistaApp(tk.Tk):
 
         rotate_negative_button = ttk.Button(rotation_frame, text="Rotate -", command=lambda: self.rotate_tibia(-self.rotation_angle))
         rotate_negative_button.pack(pady=5)
+
+
+        # Record button
+        record_button = ttk.Button(self.scrollable_frame, text="Register", command=self.record_highlighted_points)
+        record_button.pack(pady=10)
+
+
+    def record_highlighted_points(self):
+            # Clear the contents of records.csv by opening it in write mode
+            with open('records.csv', mode='w', newline='') as file:
+                writer = csv.writer(file)
+                writer.writerow(['Label', 'X', 'Y', 'Z'])  # Optionally, re-write the header
+
+            file_name = 'highlighted_records.csv'
+            file_exists = os.path.isfile(file_name)
+
+            # Open the file in append mode to add new records
+            with open(file_name, mode='a', newline='') as file:
+                writer = csv.writer(file)
+                
+                # Write the header if the file does not exist
+                if not file_exists:
+                    writer.writerow(['Label', 'X', 'Y', 'Z'])
+
+                for label, button in self.landmark_buttons.items():
+                    # Check if button is highlighted (in green)
+                    if button.cget('style') == 'Green.TButton':
+                        # Record the coordinates
+                        point = self.landmark_points[label]
+                        writer.writerow([label, point[0], point[1], point[2]])
+                        print(f"Recorded highlighted point: {label}, {point[0]}, {point[1]}, {point[2]}")
+                        
+                        # Change color to blue in both the button and the glyph actor
+                        button.config(style='White.TButton')
+                        self.glyph_actors[label].GetProperty().SetColor(0, 0, 1)  # Set color to blue
+
+            # Update the plotter to reflect the color change
+            self.plotter.update()
+
 
 
     def change_color(self, label):
